@@ -1,0 +1,92 @@
+### TicketFlash — requisições (VS Code REST Client / IntelliJ HTTP Client)
+# Troque os ids abaixo pelos do seu banco (GET /eventos e GET /usuarios)
+@base = http://localhost:8000
+@eventoId = COLE_AQUI_UM_EVENTO_ID
+@usuarioId = COLE_AQUI_UM_USUARIO_ID
+@reservaId = COLE_AQUI_O_RESERVA_ID
+
+### Health check
+GET {{base}}/health
+
+### Usuários (para pegar ids)
+GET {{base}}/usuarios
+
+########## Req. 2 — CRUD de eventos ##########
+
+### Criar evento
+POST {{base}}/eventos
+Content-Type: application/json
+
+{
+  "nome": "Festival de Verão",
+  "categoria": "festival",
+  "data": "2027-01-15T18:00:00Z",
+  "local": { "cidade": "Salvador", "endereco": "Av. Octávio Mangabeira, s/n" },
+  "atracoes": ["Ivete Sangalo", "Baiana System"],
+  "setores": [
+    { "nome": "Pista", "preco": 220, "capacidade": 10000 },
+    { "nome": "Camarote", "preco": 650, "capacidade": 800 }
+  ],
+  "patrocinadores": ["Marca X"]
+}
+
+### Listar todos
+GET {{base}}/eventos
+
+### Listar com filtro por categoria e cidade
+GET {{base}}/eventos?categoria=show&cidade=São Paulo
+
+### Buscar por id (Req. 5: 1ª vez "origem": "banco", 2ª vez "origem": "cache")
+GET {{base}}/eventos/{{eventoId}}
+
+### Atualizar (Req. 9: invalida o cache -> próxima leitura vem do banco)
+PUT {{base}}/eventos/{{eventoId}}
+Content-Type: application/json
+
+{
+  "nome": "Nome atualizado",
+  "atracoes": ["Atração 1", "Atração 2"]
+}
+
+### Remover (Req. 9: invalida o cache)
+DELETE {{base}}/eventos/{{eventoId}}
+
+########## Req. 7 — Ranking ##########
+
+### Top 5 eventos mais vistos
+GET {{base}}/eventos/ranking
+
+########## Req. 6, 8, 10 — Reserva e compra ##########
+
+### Criar reserva (SET NX EX 600; limite de 10/min por usuário -> 429)
+POST {{base}}/reservas
+Content-Type: application/json
+
+{
+  "usuarioId": "{{usuarioId}}",
+  "eventoId": "{{eventoId}}",
+  "setor": "Pista",
+  "quantidade": 2
+}
+
+### Consultar reserva (mostra o TTL restante)
+GET {{base}}/reservas/{{reservaId}}
+
+### Confirmar pedido (201; se a reserva expirou -> 410)
+POST {{base}}/pedidos/confirmar
+Content-Type: application/json
+
+{
+  "reservaId": "{{reservaId}}"
+}
+
+### Pedidos de um usuário
+GET {{base}}/pedidos?usuarioId={{usuarioId}}
+
+########## Req. 4 — Relatórios ##########
+
+### Faturamento por evento
+GET {{base}}/relatorios/faturamento
+
+### Ocupação por setor de um evento
+GET {{base}}/relatorios/ocupacao/{{eventoId}}
